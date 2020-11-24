@@ -5,9 +5,9 @@ import * as React from 'react';
 
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
-import TabOneScreen from '../screens/TabOneScreen';
-import TabTwoScreen from '../screens/TabTwoScreen';
-import { BottomTabParamList, TabOneParamList, TabTwoParamList } from '../types';
+import GroupDetailScreen from '../screens/groupDetail';
+import GroupsScreen from '../screens/groups';
+import { BottomTabParamList, GroupDetailParamList, GroupsParamList } from '../types';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -16,22 +16,22 @@ export default function BottomTabNavigator() {
 
   return (
     <BottomTab.Navigator
-      initialRouteName="TabOne"
+      initialRouteName="Group chat"
       tabBarOptions={{ activeTintColor: Colors[colorScheme].tint }}>
       <BottomTab.Screen
-        name="TabOne"
-        component={TabOneNavigator}
+        name="Group chat"
+        component={GroupDetailNavigator}
+        options={{
+          tabBarIcon: ({ color }) => <TabBarIcon name="md-contacts" color={color} />,
+        }}
+      />
+      {/* <BottomTab.Screen
+        name="GroupsTab"
+        component={GroupsNavigator}
         options={{
           tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
         }}
-      />
-      <BottomTab.Screen
-        name="TabTwo"
-        component={TabTwoNavigator}
-        options={{
-          tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
-        }}
-      />
+      /> */}
     </BottomTab.Navigator>
   );
 }
@@ -44,30 +44,30 @@ function TabBarIcon(props: { name: string; color: string }) {
 
 // Each tab has its own navigation stack, you can read more about this pattern here:
 // https://reactnavigation.org/docs/tab-based-navigation#a-stack-navigator-for-each-tab
-const TabOneStack = createStackNavigator<TabOneParamList>();
+const GroupDetailStack = createStackNavigator<GroupDetailParamList>();
 
-function TabOneNavigator() {
+function GroupDetailNavigator() {
   return (
-    <TabOneStack.Navigator>
-      <TabOneStack.Screen
-        name="TabOneScreen"
-        component={TabOneScreen}
-        options={{ headerTitle: 'Tab One Title' }}
+    <GroupDetailStack.Navigator>
+      <GroupDetailStack.Screen
+        name="GroupDetailScreen"
+        component={GroupDetailScreen}
+        options={{ headerTitle: 'Yada' }}
       />
-    </TabOneStack.Navigator>
+    </GroupDetailStack.Navigator>
   );
 }
 
-const TabTwoStack = createStackNavigator<TabTwoParamList>();
+const GroupsStack = createStackNavigator<GroupsParamList>();
 
-function TabTwoNavigator() {
+function GroupsNavigator() {
   return (
-    <TabTwoStack.Navigator>
-      <TabTwoStack.Screen
-        name="TabTwoScreen"
-        component={TabTwoScreen}
-        options={{ headerTitle: 'Tab Two Title' }}
+    <GroupsStack.Navigator>
+      <GroupsStack.Screen
+        name="GroupsScreen"
+        component={GroupsScreen}
+        options={{ headerTitle: 'Groups' }}
       />
-    </TabTwoStack.Navigator>
+    </GroupsStack.Navigator>
   );
 }

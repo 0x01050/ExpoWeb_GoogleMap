@@ -6,14 +6,14 @@ export default {
     screens: {
       Root: {
         screens: {
-          TabOne: {
+          "Group chat": {
             screens: {
-              TabOneScreen: 'one',
+              GroupDetailScreen: 'main',
             },
           },
-          TabTwo: {
+          GroupsTab: {
             screens: {
-              TabTwoScreen: 'two',
+              GroupsScreen: 'groups',
             },
           },
         },
