@@ -24,6 +24,8 @@ export const initMe = () => {
     return (dispatch: any) => {
       return ci.createUser('username').then(
         (user: any) => {
+          window.localStorage.setItem('wif', user.wif);
+          window.localStorage.setItem('username', user.username);
           return dispatch({
             type: INIT_ME,
             identity: user
