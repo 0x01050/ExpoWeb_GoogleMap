@@ -5,6 +5,7 @@ import { w3cwebsocket as W3CWebSocket } from 'websocket';
 import { CHANGE_GROUP, INIT_WS } from './types';
 import store from '../store';
 import { addChat } from './ChatActions';
+import { approveFriend } from './FriendActions';
 
 
 var ws = new W3CWebSocket('ws://71.193.201.21:8005/websocket');
@@ -83,41 +84,41 @@ export const initWs = () => {
     switch(data.method) {
       case 'route':
         try {
-          var message = JSON.parse(ci.decrypt(state.groups.active_group.username_signature, data.params.transaction.relationship));
+          var msg = JSON.parse(ci.decrypt(state.groups.active_group.username_signature, data.params.transaction.relationship));
+          if(msg.chatText.text) {
+            msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
+          }
           data.params.transaction.type = 'group';
         } catch(err) {
           try {
-            var relationship = JSON.parse(ci.decrypt(state.me.identity.wif, state.friends.friends[data.params.transaction.rid].relationship));
-            var shared_secret = ci.getSharedSecret(relationship.dh_private_key, state.friends.friends[data.params.transaction.rid].their_dh_public_key);
-            var message = ci.decrypt(shared_secret, data.params.transaction.relationship);
+            var shared_secret = ci.getSharedSecret(state.friends.friends[data.params.transaction.rid].relationship.dh_private_key, state.friends.friends[data.params.transaction.rid].their_dh_public_key);
+            var msg = JSON.parse(ci.decrypt(shared_secret, data.params.transaction.relationship));
+            if(msg.chatText.text) {
+              msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
+            }
             data.params.transaction.type = 'private';
           } catch (err2) {
-
+            if (state.friends.friends[data.params.transaction.rid] && state.friends.friends[data.params.transaction.rid].their_dh_public_key) return;
             // probably a friend request
             if (data.params.group && data.params.to) {              
-              if (state.friends.friends[data.params.transaction.rid] && data.params.transaction.dh_public_key) {
+              if (state.friends.friends[data.params.transaction.rid] && data.params.transaction.dh_public_key && state.friends.friends[data.params.transaction.rid].relationship) {
                 var relationship = JSON.parse(ci.decrypt(state.me.identity.wif, state.friends.friends[data.params.transaction.rid].relationship));
                 var shared_secret = ci.getSharedSecret(relationship.dh_private_key, data.params.transaction.dh_public_key);
                 state.friends.friends[data.params.transaction.rid].their_dh_public_key = data.params.transaction.dh_public_key;
-                message = data.params.from.username + " accepted your friend request";
+                msg.chatText.text = data.params.from.username + " accepted your friend request";
               } else {
                 // we have no friends
                 state.friends.friends[data.params.transaction.rid] = {}
                 state.friends.friends[data.params.transaction.rid].their_dh_public_key = data.params.transaction.dh_public_key;
-                message = 'New <a href="#" onclick="approveFriend(event, \'' + btoa(JSON.stringify(ci.toObject(data.params.from))) +'\', \'' + btoa(JSON.stringify(data.params.transaction)) +'\');"><strong>friend request</strong></a> from ' + data.params.from.username;
+                msg.chatText.text = 'You are now friends with ' + data.params.from.username;
+                approveFriend(data.params.from, data.params.transaction);
               }
               localStorage.setItem('friends', JSON.stringify(state.friends.friends));
               data.params.transaction.type = 'group';
             }
           }
         }
-        data.params.transaction.relationship = message
-        try {
-          message = JSON.parse(data.params.transaction);
-        } catch(err) {
-
-        }
-        store.dispatch(addChat(data.params.transaction));
+        store.dispatch(addChat(msg.chatText, data.params.from));
         // const audio = new Audio("https://siasky.net/RAAByP6xFFHxDMHQh_9VQD6xex0bTzugBpNwtDa4Mi8hFg");
         // audio.play();
         data.method = 'route_confirm';

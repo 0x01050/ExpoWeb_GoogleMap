@@ -1,20 +1,24 @@
 import { INIT_CHAT, ADD_CHAT } from '../actions/types';
 
 const INITIAL_STATE = {
-  chats: []
+  chats: {}
 };
 
 const ChatReducer = (state = INITIAL_STATE, action: any) => {
+  const { chats } = state;
   switch (action.type) {
     case INIT_CHAT:
       return Object.assign({}, state, {
-        chats: action.chats
+        chats: {}
       });
     case ADD_CHAT:
-      state.chats.unshift(action.chat);
-      return {
-        chats: state.chats
-      };
+      if (!chats[action.identity.username_signature]) {
+        chats[action.identity.username_signature] = [];
+      }
+      chats[action.identity.username_signature].push(action.chat)
+      return Object.assign({}, state, {
+        chats: chats
+      });
     default:
       return state;
   }

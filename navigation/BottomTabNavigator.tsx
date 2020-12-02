@@ -6,7 +6,7 @@ import * as React from 'react';
 import Colors from '../constants/Colors';
 import useColorScheme from '../hooks/useColorScheme';
 import GroupDetailScreen from '../screens/groupDetail';
-import GroupsScreen from '../screens/groups';
+import IdentityScreen from '../screens/Identity';
 import { BottomTabParamList, GroupDetailParamList, GroupsParamList } from '../types';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
@@ -16,22 +16,22 @@ export default function BottomTabNavigator() {
 
   return (
     <BottomTab.Navigator
-      initialRouteName="Group chat"
+      initialRouteName="Chat"
       tabBarOptions={{ activeTintColor: Colors[colorScheme].tint }}>
       <BottomTab.Screen
-        name="Group chat"
+        name="Chat"
         component={GroupDetailNavigator}
         options={{
           tabBarIcon: ({ color }) => <TabBarIcon name="md-contacts" color={color} />,
         }}
       />
-      {/* <BottomTab.Screen
-        name="GroupsTab"
+      <BottomTab.Screen
+        name="Identity"
         component={GroupsNavigator}
         options={{
           tabBarIcon: ({ color }) => <TabBarIcon name="ios-code" color={color} />,
         }}
-      /> */}
+      />
     </BottomTab.Navigator>
   );
 }
@@ -52,7 +52,7 @@ function GroupDetailNavigator() {
       <GroupDetailStack.Screen
         name="GroupDetailScreen"
         component={GroupDetailScreen}
-        options={{ headerTitle: 'Yada' }}
+        options={{ headerTitle: 'Yada - Chat' }}
       />
     </GroupDetailStack.Navigator>
   );
@@ -64,9 +64,9 @@ function GroupsNavigator() {
   return (
     <GroupsStack.Navigator>
       <GroupsStack.Screen
-        name="GroupsScreen"
-        component={GroupsScreen}
-        options={{ headerTitle: 'Groups' }}
+        name="IdentityScreen"
+        component={IdentityScreen}
+        options={{ headerTitle: 'Yada - Identity' }}
       />
     </GroupsStack.Navigator>
   );

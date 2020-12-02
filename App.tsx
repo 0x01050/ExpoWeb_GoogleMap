@@ -11,6 +11,8 @@ import { initWs } from './actions/WebsocketActions';
 import { initMe } from './actions/MeActions';
 import { initFriend } from './actions/FriendActions';
 import { initGroup } from './actions/GroupActions';
+import { initChat } from './actions/ChatActions';
+import { initActiveIdentityContext } from './actions/ActiveIdentityContextActions';
 
 
 export default class App extends React.Component {
@@ -19,6 +21,8 @@ export default class App extends React.Component {
     store.dispatch(initMe());
     store.dispatch(initFriend());
     store.dispatch(initGroup());
+    store.dispatch(initChat());
+    store.dispatch(initActiveIdentityContext());
     const colorScheme = useColorScheme();
     return (
       <Provider store={store}>
