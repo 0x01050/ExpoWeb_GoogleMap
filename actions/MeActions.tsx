@@ -10,9 +10,12 @@ export const initMe = () => {
     return (dispatch: any) => {
       return ci.reviveUser(wif, username).then(
         (user: any) => {
-          return dispatch({
-            type: INIT_ME,
-            identity: user
+          return new Promise((resolve, reject) => {
+            dispatch({
+              type: INIT_ME,
+              identity: user
+            });
+            return resolve();
           });
         }, 
         (err: any) => {
@@ -26,9 +29,12 @@ export const initMe = () => {
         (user: any) => {
           window.localStorage.setItem('wif', user.wif);
           window.localStorage.setItem('username', user.username);
-          return dispatch({
-            type: INIT_ME,
-            identity: user
+          return new Promise((resolve, reject) => {
+            dispatch({
+              type: INIT_ME,
+              identity: user
+            });
+            return resolve();
           });
         }, 
         (err: any) => {

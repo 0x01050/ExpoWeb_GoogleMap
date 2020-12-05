@@ -6,7 +6,8 @@ import {
   ScrollView,
   Button,
   Modal,
-  Linking
+  Linking,
+  TouchableOpacity
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { connect } from 'react-redux';
@@ -16,7 +17,6 @@ import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, View } from '../components/Themed';
 //@ts-ignore
 import CenterIdentity from 'centeridentity';
-import store from '../store';
 import { 
   GiftedChat,
   Actions,
@@ -27,15 +27,27 @@ import { addFriend } from '../actions/FriendActions';
 import { changeActiveIdentityContext } from '../actions/ActiveIdentityContextActions';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
+import { Appbar, Avatar, useTheme } from 'react-native-paper';
+import { DrawerNavigationProp } from '@react-navigation/drawer';
 
 
 
 class GroupDetail extends React.Component {
   constructor(props: any) {
     super(props)
+    this.props.chat.chats["MEUCIQDIlC+SpeLwUI4fzV1mkEsJCG6HIvBvazHuMMNGuVKi+gIgV8r1cexwDHM3RFGkP9bURi+RmcybaKHUcco1Qu0wvxw="] = [];
     this.state = {
-      activeUser: this.props.groups.active_group
+      activeUser: this.props.groups.active_group,
+      messages: this.props.chat.chats["MEUCIQDIlC+SpeLwUI4fzV1mkEsJCG6HIvBvazHuMMNGuVKi+gIgV8r1cexwDHM3RFGkP9bURi+RmcybaKHUcco1Qu0wvxw="]
     }
+  }
+
+  createAvatar = () => {
+    const canvas = document.createElement('canvas');
+    var ctx: any = canvas.getContext('2d');
+    var imageData = ctx.createImageData(100,100);
+    ctx.putImageData(imageData, 20, 20);
+    document.getElementsByTagName('body').append(canvas)
   }
 
   pickVideo = async () => {
@@ -156,27 +168,15 @@ class GroupDetail extends React.Component {
 
   render() {
     var ci = new CenterIdentity();
+    var picker_groups = []
+    for (const username_signature in this.props.groups.groups) {
+      picker_groups.push(<Picker.Item key={username_signature} label={this.props.groups.groups[username_signature].username} value={username_signature} />)
+    }
     return (
       <View style={styles.container}>
-        <Picker
-          selectedValue={this.state.activeUser}
-          style={{height: 50, width: 100}}
-          onValueChange={(itemValue, itemIndex) => {
-              this.props.changeActiveIdentityContext(this.props.groups.groups[itemValue] || this.props.friends.friends[itemValue]);
-              this.setState({activeUser: itemValue})
-            }
-          }>
-            <Picker.Item label="#general" value="MEUCIQDIlC+SpeLwUI4fzV1mkEsJCG6HIvBvazHuMMNGuVKi+gIgV8r1cexwDHM3RFGkP9bURi+RmcybaKHUcco1Qu0wvxw=" />
-            {
-              this.props.friends.friends_list.map(item => {
-                var rid = ci.generate_rid(ci.theirIdentityFromTransaction(item), this.props.me.identity);
-                return (<Picker.Item key={rid} label={item.relationship.their_username} value={rid} />)
-              })
-            }
-        </Picker>
         <GiftedChat
           onPressAvatar={this.props.addFriend}
-          messages={this.props.chat.chats[this.props.activeIdentityContext.identity.username_signature]}
+          messages={this.props.chat.chats[this.props.activeIdentityContext.rid]}
           onSend={this.props.sendChat}
           user={{
             _id: this.props.me.identity.username_signature,
@@ -214,7 +214,7 @@ const mapDispatchToProps = (dispatch: any) => (
   bindActionCreators({
     sendChat,
     addFriend,
-    changeActiveIdentityContext,
+    changeActiveIdentityContext
   }, dispatch)
 );
 
