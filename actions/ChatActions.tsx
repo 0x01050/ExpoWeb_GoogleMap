@@ -8,17 +8,20 @@ import Identity from '../screens/Identity';
 
 
 export const initChat = () => {
+  var state = store.getState()
+  var ci = new CenterIdentity();
+  var requested_rid = ci.generate_rid(Object.keys(state.groups.groups)[0], state.ws.server_identity);
   return {
     type: INIT_CHAT
   };
 };
 
-export const addChat = (message: any, identity: any) => {
-
+export const addChat = (message: any, identifier: any) => {
+  var state = store.getState()
   return {
     type: ADD_CHAT,
     chat: message,
-    identity: identity
+    identifier: identifier
   };
 
 }
@@ -31,15 +34,22 @@ export const sendChat = (message: any) => {
     if (msg.text) {
       msg.text = unescape(encodeURIComponent(msg.text));
     }
-    if (state.activeIdentityContext.identity.their_dh_public_key && state.activeIdentityContext.identity.relationship.dh_private_key) {
-      var key = ci.getSharedSecret(state.activeIdentityContext.identity.relationship.dh_private_key, state.activeIdentityContext.identity.their_dh_public_key);
-      var group_identity = ci.theirIdentityFromTransaction(state.activeIdentityContext.identity);
-    } else if (state.activeIdentityContext.identity.username_signature) {
+    if (
+      state.activeIdentityContext.identity.dh_public_key && 
+      state.activeIdentityContext.identity.dh_private_key &&
+      state.friends.friends[state.activeIdentityContext.rid]
+    ) {
+      var key = ci.getSharedSecret(state.activeIdentityContext.identity.dh_private_key, state.activeIdentityContext.identity.dh_public_key);
+      var identifier = ci.generate_rid(state.activeIdentityContext.identity, state.me.identity);
+    } else if (
+      state.activeIdentityContext.identity.username_signature &&
+      state.groups.groups[state.activeIdentityContext.rid]
+    ) {
       var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.salt || '');
-      var group_identity = state.activeIdentityContext.identity;
-    } else {
-      var key = state.activeIdentityContext.identity.their_username_signature + (state.activeIdentityContext.identity.salt || '');
-      var group_identity = state.activeIdentityContext.identity;
+      var identifier = state.activeIdentityContext.identity.username_signature;
+    } else if (ci.generate_rid(state.ws.server_identity, state.me.identity) === state.activeIdentityContext.rid) {
+      var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.salt || '');
+      var identifier = state.activeIdentityContext.identity.username_signature;
     }
 
     var encryptedChatRelationship = ci.encrypt(key, JSON.stringify({chatText: msg}))
@@ -47,7 +57,7 @@ export const sendChat = (message: any) => {
 
     var requested_rid = ci.generate_rid(
       state.ws.server_identity,
-      group_identity
+      state.activeIdentityContext.identity
     );
 
     var requester_rid = ci.generate_rid(
@@ -58,7 +68,7 @@ export const sendChat = (message: any) => {
       state.me.identity,
       meObject.public_key,
       '',
-      ci.generate_rid(state.me.identity, group_identity),
+      ci.generate_rid(state.me.identity, state.activeIdentityContext.identity),
       encryptedChatRelationship,
       0,
       requester_rid,
@@ -72,7 +82,7 @@ export const sendChat = (message: any) => {
         'jsonrpc': 2.0,
         'params': {
           'transaction': transaction,
-          'to': ci.toObject(state.groups.active_group),
+          'to': ci.toObject(state.activeIdentityContext.identity),
           'from': ci.toObject(state.me.identity)
         }
       };
@@ -84,10 +94,11 @@ export const sendChat = (message: any) => {
       if (!message[0]._id) {
         message[0]._id = transaction.id
       }
+
       return dispatch({
         type: ADD_CHAT,
         chat: message[0],
-        identity: state.activeIdentityContext.identity
+        identifier: state.activeIdentityContext.rid
       });
     })
   }

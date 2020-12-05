@@ -1,4 +1,5 @@
 import { INIT_CHAT, ADD_CHAT } from '../actions/types';
+import store from '../store';
 
 const INITIAL_STATE = {
   chats: {}
@@ -12,13 +13,14 @@ const ChatReducer = (state = INITIAL_STATE, action: any) => {
         chats: {}
       });
     case ADD_CHAT:
-      if (!chats[action.identity.username_signature]) {
-        chats[action.identity.username_signature] = [];
+      if (!chats[action.identifier]) {
+        chats[action.identifier] = [];
       }
-      chats[action.identity.username_signature].push(action.chat)
-      return Object.assign({}, state, {
+      chats[action.identifier].unshift(action.chat);
+      return {
+        ...state,
         chats: chats
-      });
+      };
     default:
       return state;
   }

@@ -5,6 +5,7 @@ export const ADD_FRIEND = 'ADD_FRIEND';
 export const APPROVE_FRIEND = 'APPROVE_FRIEND';
 export const INIT_GROUP = 'INIT_GROUP';
 export const CHANGE_GROUP = 'CHANGE_GROUP';
+export const ADD_GROUP = 'ADD_GROUP';
 export const INIT_CHAT = 'INIT_CHAT';
 export const ADD_CHAT = 'ADD_CHAT';
 export const INIT_ACTIVE_IDENTITY_CONTEXT = 'INIT_ACTIVE_IDENTITY_CONTEXT';
