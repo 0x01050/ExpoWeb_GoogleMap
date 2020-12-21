@@ -8,16 +8,12 @@ import Identity from '../screens/Identity';
 
 
 export const initChat = () => {
-  var state = store.getState()
-  var ci = new CenterIdentity();
-  var requested_rid = ci.generate_rid(Object.keys(state.groups.groups)[0], state.ws.server_identity);
   return {
     type: INIT_CHAT
   };
 };
 
 export const addChat = (message: any, identifier: any) => {
-  var state = store.getState()
   return {
     type: ADD_CHAT,
     chat: message,
@@ -45,10 +41,10 @@ export const sendChat = (message: any) => {
       state.activeIdentityContext.identity.username_signature &&
       state.groups.groups[state.activeIdentityContext.rid]
     ) {
-      var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.salt || '');
+      var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.password || '');
       var identifier = state.activeIdentityContext.identity.username_signature;
     } else if (ci.generate_rid(state.ws.server_identity, state.me.identity) === state.activeIdentityContext.rid) {
-      var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.salt || '');
+      var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.password || '');
       var identifier = state.activeIdentityContext.identity.username_signature;
     }
 

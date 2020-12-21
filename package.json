@@ -52,10 +52,12 @@
   },
   "devDependencies": {
     "@babel/core": "~7.9.0",
+    "@expo/webpack-config": "^0.12.51",
     "@types/react": "~16.9.35",
     "@types/react-native": "~0.63.2",
     "jest-expo": "~39.0.0",
     "typescript": "~3.9.5"
   },
-  "private": true
+  "private": true,
+  "homepage": "/static/yadacoinweb/socialapp"
 }

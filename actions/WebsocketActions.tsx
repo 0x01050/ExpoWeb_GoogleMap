@@ -5,12 +5,12 @@ import { w3cwebsocket as W3CWebSocket } from 'websocket';
 import { CHANGE_GROUP, INIT_WS } from './types';
 import store from '../store';
 import { initChat, addChat } from './ChatActions';
-import { initFriend, approveFriend } from './FriendActions';
+import { initFriend, approveFriend, updateFriends } from './FriendActions';
 import { initGroup, addGroup } from './GroupActions';
 import { initActiveIdentityContext } from './ActiveIdentityContextActions';
 
 
-var ws = new W3CWebSocket('ws://71.193.201.21:8005/websocket');
+var ws = new W3CWebSocket('wss://centeridentity.com/websocket');
 var ci = new CenterIdentity();
 var message_queue: any = {};
 var sending_message_queue_busy = false;
@@ -76,13 +76,14 @@ export const joinGroup = (group: any) => {
 const decrypt = (data: any) => {
   var state = store.getState();
   try {
-    var msg = JSON.parse(ci.decrypt(state.groups.groups[data.params.transaction.requested_rid].username_signature, data.params.transaction.relationship));
+    var group = state.groups.groups[data.params.transaction.requested_rid];
+    var key = group.username_signature + (group.password || '')
+    var msg = JSON.parse(ci.decrypt(key, data.params.transaction.relationship));
     if(msg.chatText.text) {
       msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
     }
     var rid = ci.generate_rid(data.params.to, state.ws.server_identity);
-    store.dispatch(addChat(msg.chatText, rid));
-    return msg;
+    return msg.chatText;
   } catch(err) {
     console.log(err);
   }
@@ -91,8 +92,7 @@ const decrypt = (data: any) => {
     if(msg.chatText.text) {
       msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
     }
-    store.dispatch(addChat(msg.chatText, data.params.transaction.requested_rid));
-    return msg;
+    return msg.chatText;
   } catch(err) {
     console.log(err);
   }
@@ -102,8 +102,7 @@ const decrypt = (data: any) => {
     if(msg.chatText.text) {
       msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
     }
-    store.dispatch(addChat(msg.chatText, ci.generate_rid(state.me.identity, data.params.from)));
-    return msg;
+    return msg.chatText;
   } catch (err) {
     console.log(err);
   }
@@ -132,9 +131,8 @@ const decrypt = (data: any) => {
         approveFriend(data.params.from, data.params.transaction);
       }
       localStorage.setItem('friends', JSON.stringify(state.friends.friends));
-      store.dispatch(addChat(msg.chatText, ci.generate_rid(state.me.identity, data.params.from)));
     }
-    return msg;
+    return msg.chatText;
   } catch (err) {
     console.log(err);
   }
@@ -151,7 +149,10 @@ export const initWs = () => {
     console.log(data);
     switch(data.method) {
       case 'route':
+        var state = store.getState();
         var msg = decrypt(data);
+        var rid = ci.generate_rid(data.params.to, state.ws.server_identity);
+        store.dispatch(addChat(msg, rid));
         // const audio = new Audio("https://siasky.net/RAAByP6xFFHxDMHQh_9VQD6xex0bTzugBpNwtDa4Mi8hFg");
         // audio.play();
         data.method = 'route_confirm';
@@ -205,11 +206,52 @@ export const initWs = () => {
         });
         break;
       case 'join_confirmed':
+        var state = store.getState();
+        console.log('chat history' + data.result.rid)
+        send({
+            'method': 'chat_history',
+            'jsonrpc': 2.0,
+            'params': {
+              'to': ci.toObject(state.groups.groups[data.result.rid])
+            }
+        });
         break;
       case 'group_user_count':
         break;
       case 'route_confirm':
         break;
+      case 'online':
+        var state = store.getState();
+        var friends = state.friends.friends;
+        for (var i=0; i < Object.keys(friends).length; i++) {
+          var friend = friends[Object.keys(friends)[i]];
+          var rid = ci.generate_rid(friend, state.ws.server_identity);
+          friend.online = false
+          if(data.result.online_rids.indexOf(rid) === -1) {
+            continue;
+          }
+          friend.online = true
+        }
+        updateFriends(friends);
+        break;
+      case 'chat_history_response':
+        var state = store.getState();
+        var chats = [];
+        for(var i=0; i < data.result.chats.length; i++) {
+          try {
+            var chat = decrypt({'params': {'transaction': data.result.chats[i], 'to': data.result.to}});
+          } catch(err) {
+
+          }
+          if (chat) {
+            chats.push(chat);
+          }
+        }
+        var rid = ci.generate_rid(data.result.to, state.ws.server_identity);
+        if (chats.length > 0) {
+          state.chat.chats[rid] = [];
+          store.dispatch(addChat(chats, rid));
+        }
     }
   };
 

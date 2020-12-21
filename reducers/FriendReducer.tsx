@@ -1,4 +1,4 @@
-import { INIT_FRIENDS, ADD_FRIEND, APPROVE_FRIEND } from '../actions/types';
+import { INIT_FRIENDS, ADD_FRIEND, APPROVE_FRIEND, UPDATE_FRIENDS } from '../actions/types';
 
 const INITIAL_STATE = {
   friends: {}
@@ -21,6 +21,10 @@ const FriendReducer = (state = INITIAL_STATE, action: any) => {
         friends: action.friends
       });
     case APPROVE_FRIEND:
+      return Object.assign({}, state, {
+        friends: action.friends
+      });
+    case UPDATE_FRIENDS:
       return Object.assign({}, state, {
         friends: action.friends
       });
