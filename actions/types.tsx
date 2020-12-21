@@ -3,6 +3,7 @@ export const INIT_WS = 'INIT_WS';
 export const INIT_FRIENDS = 'INIT_FRIENDS';
 export const ADD_FRIEND = 'ADD_FRIEND';
 export const APPROVE_FRIEND = 'APPROVE_FRIEND';
+export const UPDATE_FRIENDS = 'UPDATE_FRIENDS';
 export const INIT_GROUP = 'INIT_GROUP';
 export const CHANGE_GROUP = 'CHANGE_GROUP';
 export const ADD_GROUP = 'ADD_GROUP';

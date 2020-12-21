@@ -29,17 +29,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
 import { Appbar, Avatar, useTheme } from 'react-native-paper';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
+import { Video } from 'expo-av';
 
 
 
 class GroupDetail extends React.Component {
   constructor(props: any) {
-    super(props)
-    this.props.chat.chats["MEUCIQDIlC+SpeLwUI4fzV1mkEsJCG6HIvBvazHuMMNGuVKi+gIgV8r1cexwDHM3RFGkP9bURi+RmcybaKHUcco1Qu0wvxw="] = [];
-    this.state = {
-      activeUser: this.props.groups.active_group,
-      messages: this.props.chat.chats["MEUCIQDIlC+SpeLwUI4fzV1mkEsJCG6HIvBvazHuMMNGuVKi+gIgV8r1cexwDHM3RFGkP9bURi+RmcybaKHUcco1Qu0wvxw="]
-    }
+    super(props);
   }
 
   createAvatar = () => {
@@ -131,7 +127,7 @@ class GroupDetail extends React.Component {
     let fileType = uriParts[0].split('/')[1].split(';')[0];
     let fileData = uriParts[uriParts.length - 1];
   
-    let apiUrl = 'http://71.193.201.21:8005/sia-upload?filename=file.' + fileType;
+    let apiUrl = 'https://centeridentity.com/sia-upload?filename=file.' + fileType;
     let options = {
       method: 'POST',
       body: JSON.stringify({
@@ -165,6 +161,31 @@ class GroupDetail extends React.Component {
   handleUrlPress = (url: any) => {
     Linking.openURL(url);
   }
+  
+  renderMessageVideo(props: any) {
+    console.log("videoprop:", props.currentMessage.video);
+      return <View style={{ position: 'relative', height: 150, width: 250 }}>
+  
+      <Video
+      style={{
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        height: 150,
+        width: 250,
+        borderRadius: 20,
+      }}
+      useNativeControls={true}
+      rate={1.0}
+      resizeMode="cover"
+      height={150}
+      width={250}
+      muted={true}
+      source={{ uri: props.currentMessage.video }}
+      allowsExternalPlayback={false}></Video>
+  
+      </View>
+  }
 
   render() {
     var ci = new CenterIdentity();
@@ -174,6 +195,9 @@ class GroupDetail extends React.Component {
     }
     return (
       <View style={styles.container}>
+        <Text
+          style={{fontSize: 20, fontWeight: 'bold', margin: 10}}
+        >{this.props.activeIdentityContext.identity.username}</Text>
         <GiftedChat
           onPressAvatar={this.props.addFriend}
           messages={this.props.chat.chats[this.props.activeIdentityContext.rid]}
@@ -189,6 +213,7 @@ class GroupDetail extends React.Component {
           parsePatterns={(linkStyle) => [
             { type: 'url', style: styles.url, onPress: this.handleUrlPress },
           ]}
+          renderMessageVideo={this.renderMessageVideo}
         />
       </View>
     );

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { TouchableOpacity } from 'react-native';
+import { TouchableOpacity, Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as React from 'react';
@@ -14,6 +14,7 @@ import { createDrawerNavigator } from '@react-navigation/drawer';
 import { DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { Appbar, Avatar, useTheme } from 'react-native-paper';
 import DrawerContent from './drawerContent';
+import store from '../store';
 
 const BottomTab = createBottomTabNavigator<BottomTabParamList>();
 
@@ -40,7 +41,7 @@ function TabBarIcon(props: { name: string; color: string }) {
 // Each tab has its own navigation stack, you can read more about this pattern here:
 // https://reactnavigation.org/docs/tab-based-navigation#a-stack-navigator-for-each-tab
 const GroupDetailStack = createStackNavigator<GroupDetailParamList>();
-
+var state = store.getState();
 export const GroupDetailNavigator = () => {
   const theme = useTheme();
   return (
@@ -48,12 +49,7 @@ export const GroupDetailNavigator = () => {
     screenOptions={{
       header: ({ scene, previous, navigation }) => {
         const { options } = scene.descriptor;
-        const title =
-          options.headerTitle !== undefined
-            ? options.headerTitle
-            : options.title !== undefined
-            ? options.title
-            : scene.route.name;
+        const title = state.activeIdentityContext.identity.username;
 
         return (
           <Appbar.Header
@@ -81,18 +77,7 @@ export const GroupDetailNavigator = () => {
               </TouchableOpacity>
             )}
             <Appbar.Content
-              title={
-                title === 'Feed' ? (
-                  <MaterialCommunityIcons
-                    style={{ marginRight: 10 }}
-                    name="twitter"
-                    size={40}
-                    color={theme.colors.primary}
-                  />
-                ) : (
-                  title
-                )
-              }
+              title={state.activeIdentityContext.identity.username}
               titleStyle={{
                 fontSize: 18,
                 fontWeight: 'bold',
@@ -106,7 +91,6 @@ export const GroupDetailNavigator = () => {
       <GroupDetailStack.Screen
         name="GroupDetailScreen"
         component={GroupDetailScreen}
-        options={{ headerTitle: 'Chat' }}
       />
     </GroupDetailStack.Navigator>
   );

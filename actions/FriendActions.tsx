@@ -1,6 +1,6 @@
 //@ts-ignore
 import CenterIdentity from 'centeridentity';
-import { INIT_FRIENDS, ADD_FRIEND, APPROVE_FRIEND, ADD_CHAT } from './types';
+import { INIT_FRIENDS, ADD_FRIEND, APPROVE_FRIEND, ADD_CHAT, UPDATE_FRIENDS } from './types';
 import store from '../store';
 import { send } from './WebsocketActions';
 import { addGroup } from './GroupActions';
@@ -13,29 +13,31 @@ export const initFriend = () => {
   if (friends) {
     var friendsList = JSON.parse(friends);
     var newFriends: any = {};
+    var rids = []
     for (const rid in friendsList) {
-        var friend = false;
-        try {
-          friend = ci.theirIdentityFromEncryptedTransaction(state.me.identity, friendsList[rid], {dh_public_key: friendsList[rid].their_dh_public_key});
+      var friend = false;
+      try {
+        friend = ci.theirIdentityFromEncryptedTransaction(state.me.identity, friendsList[rid], {dh_public_key: friendsList[rid].their_dh_public_key});
+        var test_rid = ci.generate_rid(friend, state.me.identity);
+      } catch(err) {
+        if(friendsList[rid].relationship && friendsList[rid].relationship.their_username_signature) {
+          friend = ci.theirIdentityFromTransaction(friendsList[rid], {dh_public_key: friendsList[rid].their_dh_public_key});
           var test_rid = ci.generate_rid(friend, state.me.identity);
-        } catch(err) {
-          if(friendsList[rid].relationship && friendsList[rid].relationship.their_username_signature) {
-            friend = ci.theirIdentityFromTransaction(friendsList[rid], {dh_public_key: friendsList[rid].their_dh_public_key});
-            var test_rid = ci.generate_rid(friend, state.me.identity);
-          } else if (friendsList[rid].username_signature) {
-            friend = friendsList[rid]
-          } else {
-            continue
-          }
+        } else if (friendsList[rid].username_signature) {
+          friend = friendsList[rid]
+        } else {
+          continue
         }
-        if (friend) {
-          var test_rid = ci.generate_rid(friend, state.me.identity);
-          if (test_rid === rid) {
-            newFriends[rid] = friend;
-            joinGroup(friend);
-          }
+      }
+      if (friend) {
+        var test_rid = ci.generate_rid(friend, state.me.identity);
+        rids.push(ci.generate_rid(friend, state.ws.server_identity))
+        if (test_rid === rid) {
+          newFriends[rid] = friend;
         }
+      }
     }
+    online(rids)
     return (dispatch: any) => {
       return new Promise((resolve, reject) => {
         dispatch({
@@ -57,6 +59,17 @@ export const initFriend = () => {
     }
   }
 };
+
+export const online = (rids: any) => {
+  var state = store.getState();
+  send({
+    'method': 'online',
+    'jsonrpc': 2.0,
+    'params': {
+      'rids': rids
+    }
+  });
+}
 
 function uuidv4() {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
@@ -143,4 +156,11 @@ export const approveFriend = async (friend: any, request: any) => {
         }
     });
   });
+}
+
+export const updateFriends = (friends: any) => {
+  return {
+    type: UPDATE_FRIENDS,
+    friends: friends
+  }
 }
