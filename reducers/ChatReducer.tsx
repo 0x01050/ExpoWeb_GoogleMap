@@ -26,19 +26,15 @@ const ChatReducer = (state = INITIAL_STATE, action: any) => {
       if (!action.chat.length) {
         action.chat = [action.chat];
       }
+
       for(var i=0; i < action.chat.length; i++) {
-        action.chat[i]._id = uuidv4();
-        action.chat[i].createdAt = new Date(action.chat[i].createdAt)
-        chats[action.identifier].push(action.chat[i]);
+        action.chat[i].chatText._id = uuidv4();
+        action.chat[i].chatText.createdAt = new Date(action.chat[i].chatText.createdAt)
+        chats[action.identifier].push(action.chat[i].chatText);
       }
-        
-      chats[action.identifier] = chats[action.identifier].sort((a, b) => {
-        if (a.createdAt < b.createdAt)
-          return 1
-        if (a.createdAt > b.createdAt)
-          return -1
-        return 0
-      });
+
+      chats[action.identifier].sort((a, b) => b.createdAt - a.createdAt)
+
       return {
         ...state,
         chats: chats

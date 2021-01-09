@@ -5,6 +5,7 @@ import GroupReducer from './GroupReducer';
 import MeReducer from './MeReducer';
 import websocketReducer from './WebsocketReducer';
 import ChatReducer from './ChatReducer';
+import FeedReducer from './FeedReducer';
 import ActiveIdentityContextReducer from './ActiveIdentityContextReducer';
 
 export default combineReducers({
@@ -13,5 +14,6 @@ export default combineReducers({
   friends: FriendReducer,
   groups: GroupReducer,
   chat: ChatReducer,
+  feed: FeedReducer,
   activeIdentityContext: ActiveIdentityContextReducer
 });

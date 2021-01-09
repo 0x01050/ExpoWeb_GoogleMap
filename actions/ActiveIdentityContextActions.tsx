@@ -21,7 +21,7 @@ export const initActiveIdentityContext = () => {
       }
     } else {
       var group_data = {
-        "username": 'group',
+        "username": '#general',
         "wif":"KydUVG4w2ZSQkg6DAZ4UCEbfZz9Tg4PsjJFnvHwFsfmRkqXAHN8W"
       }
     }
@@ -39,6 +39,7 @@ export const initActiveIdentityContext = () => {
 export const changeActiveIdentityContext = (identity: any, rid: any, group: any) => {
   var state = store.getState()
   joinGroup(identity);
+  window.location.hash = identity.username;                                                                                                                                             
   return {
     type: CHANGE_ACTIVE_IDENTITY_CONTEXT,
     identity: identity,

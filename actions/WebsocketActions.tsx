@@ -8,6 +8,7 @@ import { initChat, addChat } from './ChatActions';
 import { initFriend, approveFriend, updateFriends } from './FriendActions';
 import { initGroup, addGroup } from './GroupActions';
 import { initActiveIdentityContext } from './ActiveIdentityContextActions';
+import { initFeed, addPost, addComment } from './FeedActions';
 
 
 var ws = new W3CWebSocket('wss://centeridentity.com/websocket');
@@ -52,6 +53,70 @@ const connect = () => {
   });
 }
 
+export const createRecord = (data: any) => {
+  var state = store.getState();
+  if (typeof data !== 'string') {
+    data = JSON.stringify(data)
+  }
+  if (
+    state.activeIdentityContext.identity.dh_public_key && 
+    state.activeIdentityContext.identity.dh_private_key &&
+    state.friends.friends[state.activeIdentityContext.rid]
+  ) {
+    var key = ci.getSharedSecret(state.activeIdentityContext.identity.dh_private_key, state.activeIdentityContext.identity.dh_public_key);
+    var identifier = ci.generate_rid(state.activeIdentityContext.identity, state.me.identity);
+  } else if (
+    state.activeIdentityContext.identity.username_signature &&
+    state.groups.groups[state.activeIdentityContext.rid]
+  ) {
+    var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.password || '');
+    var identifier = state.activeIdentityContext.identity.username_signature;
+  } else if (ci.generate_rid(state.ws.server_identity, state.me.identity) === state.activeIdentityContext.rid) {
+    var key = state.activeIdentityContext.identity.username_signature + (state.activeIdentityContext.identity.password || '');
+    var identifier = state.activeIdentityContext.identity.username_signature;
+  }
+  var encryptedChatRelationship = ci.encrypt(key, data)
+  var meObject = ci.toObject(state.me.identity);
+
+  var requested_rid = ci.generate_rid(
+    state.ws.server_identity,
+    state.activeIdentityContext.identity
+  );
+
+  var requester_rid = ci.generate_rid(
+    state.ws.server_identity,
+    state.me.identity,
+  );
+  return ci.generateTransaction(
+    state.me.identity,
+    meObject.public_key,
+    '',
+    ci.generate_rid(state.me.identity, state.activeIdentityContext.identity),
+    encryptedChatRelationship,
+    0,
+    requester_rid,
+    requested_rid
+  )
+  .then((transaction: any) => {
+    return new Promise((resolve, reject) => {
+      console.log('transaction: ', transaction);
+  
+      var m = {
+        'method': 'route',
+        'jsonrpc': 2.0,
+        'params': {
+          'transaction': transaction,
+          'to': ci.toObject(state.activeIdentityContext.identity),
+          'from': ci.toObject(state.me.identity)
+        }
+      };
+  
+      send(m);
+      return resolve(transaction);
+    })
+  })
+}
+
 export const joinGroup = (group: any) => {
   var state = store.getState();
   var requested_rid = ci.generate_rid(
@@ -79,30 +144,54 @@ const decrypt = (data: any) => {
     var group = state.groups.groups[data.params.transaction.requested_rid];
     var key = group.username_signature + (group.password || '')
     var msg = JSON.parse(ci.decrypt(key, data.params.transaction.relationship));
-    if(msg.chatText.text) {
+    msg.id = data.params.transaction.id;
+    msg.time = data.params.transaction.time;
+    if(msg.chatText && msg.chatText.text) {
       msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
     }
+    if(msg.postText && msg.postText.text) {
+      msg.postText.text = decodeURIComponent(escape(msg.postText.text));
+    }
+    if(msg.commentText && msg.commentText.text) {
+      msg.commentText.text = decodeURIComponent(escape(msg.commentText.text));
+    }
     var rid = ci.generate_rid(data.params.to, state.ws.server_identity);
-    return msg.chatText;
+    return msg;
   } catch(err) {
     console.log(err);
   }
   try {
     var msg = JSON.parse(ci.decrypt(state.me.identity.username_signature, data.params.transaction.relationship));
-    if(msg.chatText.text) {
+    msg.id = data.params.transaction.id;
+    msg.time = data.params.transaction.time;
+    if(msg.chatText && msg.chatText.text) {
       msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
     }
-    return msg.chatText;
+    if(msg.postText && msg.postText.text) {
+      msg.postText.text = decodeURIComponent(escape(msg.postText.text));
+    }
+    if(msg.commentText && msg.commentText.text) {
+      msg.commentText.text = decodeURIComponent(escape(msg.commentText.text));
+    }
+    return msg;
   } catch(err) {
     console.log(err);
   }
   try {
     var shared_secret = ci.getSharedSecret(state.friends.friends[data.params.transaction.rid].dh_private_key, state.friends.friends[data.params.transaction.rid].dh_public_key);
     var msg = JSON.parse(ci.decrypt(shared_secret, data.params.transaction.relationship));
-    if(msg.chatText.text) {
+    msg.id = data.params.transaction.id;
+    msg.time = data.params.transaction.time;
+    if(msg.chatText && msg.chatText.text) {
       msg.chatText.text = decodeURIComponent(escape(msg.chatText.text));
     }
-    return msg.chatText;
+    if(msg.postText && msg.postText.text) {
+      msg.postText.text = decodeURIComponent(escape(msg.postText.text));
+    }
+    if(msg.commentText && msg.commentText.text) {
+      msg.commentText.text = decodeURIComponent(escape(msg.commentText.text));
+    }
+    return msg;
   } catch (err) {
     console.log(err);
   }
@@ -132,7 +221,7 @@ const decrypt = (data: any) => {
       }
       localStorage.setItem('friends', JSON.stringify(state.friends.friends));
     }
-    return msg.chatText;
+    return msg;
   } catch (err) {
     console.log(err);
   }
@@ -152,7 +241,13 @@ export const initWs = () => {
         var state = store.getState();
         var msg = decrypt(data);
         var rid = ci.generate_rid(data.params.to, state.ws.server_identity);
-        store.dispatch(addChat(msg, rid));
+        if(msg.chatText) {
+          store.dispatch(addChat(msg.chatText, rid));
+        } else if(msg.postText) {
+          store.dispatch(addPost(msg.postText, rid));
+        } else if(msg.commentText) {
+          store.dispatch(addPost(msg.commentText, rid));
+        }
         // const audio = new Audio("https://siasky.net/RAAByP6xFFHxDMHQh_9VQD6xex0bTzugBpNwtDa4Mi8hFg");
         // audio.play();
         data.method = 'route_confirm';
@@ -187,6 +282,9 @@ export const initWs = () => {
         })
         .then(() => {
           return store.dispatch(initChat());
+        })
+        .then(() => {
+          return store.dispatch(initFeed());
         })
         .then(() => {
           return store.dispatch(initActiveIdentityContext());
@@ -237,20 +335,38 @@ export const initWs = () => {
       case 'chat_history_response':
         var state = store.getState();
         var chats = [];
+        var posts = [];
+        var comments: any = {};
+        var rid = ci.generate_rid(data.result.to, state.ws.server_identity);
         for(var i=0; i < data.result.chats.length; i++) {
           try {
             var chat = decrypt({'params': {'transaction': data.result.chats[i], 'to': data.result.to}});
+            if (!chat) continue
           } catch(err) {
-
+            continue
           }
-          if (chat) {
+          if (chat.chatText) {
             chats.push(chat);
+          } else if (chat.postText) {
+            posts.push(chat);
+          } else if (chat.commentText) {
+            if(!comments[chat.commentText.parent]) {
+              comments[chat.commentText.parent] = [];
+            }
+            comments[chat.commentText.parent].push(chat);
           }
         }
-        var rid = ci.generate_rid(data.result.to, state.ws.server_identity);
         if (chats.length > 0) {
           state.chat.chats[rid] = [];
           store.dispatch(addChat(chats, rid));
+        }
+        if (posts.length > 0) {
+          state.feed.posts[rid] = [];
+          store.dispatch(addPost(posts, rid));
+        }
+        if (Object.keys(comments).length > 0) {
+          state.feed.comments[rid] = [];
+          store.dispatch(addComment(comments, rid));
         }
     }
   };

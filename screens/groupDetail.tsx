@@ -2,9 +2,7 @@ import * as React from 'react';
 import { 
   StyleSheet, 
   Pressable, 
-  TextInput, 
   ScrollView,
-  Button,
   Modal,
   Linking,
   TouchableOpacity
@@ -15,6 +13,8 @@ import { bindActionCreators } from 'redux';
 
 import EditScreenInfo from '../components/EditScreenInfo';
 import { Text, View } from '../components/Themed';
+import Feed from '../components/Feed';
+import MapBox from '../components/MapBox';
 //@ts-ignore
 import CenterIdentity from 'centeridentity';
 import { 
@@ -23,19 +23,27 @@ import {
   ActionsProps,
 } from 'react-native-gifted-chat'
 import { sendChat } from '../actions/ChatActions';
+import { createGroup } from '../actions/GroupActions';
 import { addFriend } from '../actions/FriendActions';
 import { changeActiveIdentityContext } from '../actions/ActiveIdentityContextActions';
+import { initMe } from '../actions/MeActions';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
-import { Appbar, Avatar, useTheme } from 'react-native-paper';
+import { Appbar, Avatar, useTheme, TextInput, Switch, Caption, Button } from 'react-native-paper';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { Video } from 'expo-av';
+import store from '../store';
 
 
 
 class GroupDetail extends React.Component {
   constructor(props: any) {
     super(props);
+    this.state = {
+      username: '',
+      chatOrFeed: window.location.hash.indexOf('|') === -1 ? false : true,
+      context: ''
+    }
   }
 
   createAvatar = () => {
@@ -187,34 +195,161 @@ class GroupDetail extends React.Component {
       </View>
   }
 
+  onUsernameChange = (text: any) => {
+    this.setState({...this.state, username: text})
+  }
+
+  onSubmitUsername = () => {
+    const {username} = this.state;
+    window.localStorage.setItem('username', username);
+    this.props.initMe().then(() => {window.location.reload()});
+  }
+
+  setChatOrFeed = (value: any) => {
+    this.setState({...this.state,
+      chatOrFeed: value
+    })
+  }
+
+  setStatus = (status: any) => {
+    var state = store.getState();
+    var ci = new CenterIdentity();
+    var pathString = this.props.activeIdentityContext.identity.username.split('|').slice(0,2).join('|') + '|' + status;
+    var group = this.props.createGroup(pathString)
+    .then((group:any) => {
+      var requested_rid = ci.generate_rid(group, state.ws.server_identity)
+      this.props.changeActiveIdentityContext(group, requested_rid, true);
+      this.props.chat.chats[this.props.activeIdentityContext.rid] = this.props.chat.chats[this.props.activeIdentityContext.rid]
+    });
+  }
+
+  goBack = () => {
+    var state = store.getState();
+    var ci = new CenterIdentity();
+    var pathString = this.props.activeIdentityContext.identity.username.split('|')[0];
+    var group = this.props.createGroup(pathString)
+    .then((group:any) => {
+      var requested_rid = ci.generate_rid(group, state.ws.server_identity)
+      this.props.changeActiveIdentityContext(group, requested_rid, true);
+      this.props.chat.chats[this.props.activeIdentityContext.rid] = this.props.chat.chats[this.props.activeIdentityContext.rid]
+      const { chatOrFeed } = this.state;
+      this.setState({
+        ...this.state,
+        chatOrFeed: false
+      })
+    });
+  }
+
   render() {
     var ci = new CenterIdentity();
     var picker_groups = []
     for (const username_signature in this.props.groups.groups) {
       picker_groups.push(<Picker.Item key={username_signature} label={this.props.groups.groups[username_signature].username} value={username_signature} />)
     }
+    let insertable = null;
+    const { chatOrFeed } = this.state;
+    if(chatOrFeed) {
+      insertable =  <GiftedChat
+        onPressAvatar={this.props.addFriend}
+        messages={this.props.chat.chats[this.props.activeIdentityContext.rid]}
+        onSend={this.props.sendChat}
+        user={{
+          _id: this.props.me.identity.username_signature,
+          name: this.props.me.identity.username,
+          username: this.props.me.identity.username,
+          username_signature: this.props.me.identity.username_signature,
+          public_key: this.props.me.identity.public_key,
+        }}
+        renderActions={this.renderActions}
+        parsePatterns={(linkStyle) => [
+          { type: 'url', style: styles.url, onPress: this.handleUrlPress },
+        ]}
+        renderMessageVideo={this.renderMessageVideo}
+      />
+    } else {
+      insertable = <Feed 
+        setChatOrFeed={this.setChatOrFeed}
+      />;
+    }
+    var username = '';
+    if(this.props.activeIdentityContext.identity.username) {
+      username = this.props.activeIdentityContext.identity.username;
+      username = username ? username.split('|')[0] : '';
+      var wif = this.props.activeIdentityContext.identity.wif;
+      var txn = '';
+      if(this.props.activeIdentityContext.identity.username.split('|')[1] && this.state.context.length === 0) {
+        fetch('https://centeridentity.com/get-transaction-by-id?id=' + this.props.activeIdentityContext.identity.username.split('|')[1])
+        .then((response) => {
+          return response.json()
+        })
+        .then((tx: any) => {
+          txn = tx;
+          return ci.reviveUser(wif, username);
+        })
+        .then((root_group: any) => {
+          return ci.decrypt(root_group.username_signature, txn.relationship);
+        })
+        .then((str: any) => {
+          this.setState({
+            ...this.state,
+            context: JSON.parse(str)['postText']['text']
+          })
+        })
+      }
+    }
     return (
       <View style={styles.container}>
-        <Text
-          style={{fontSize: 20, fontWeight: 'bold', margin: 10}}
-        >{this.props.activeIdentityContext.identity.username}</Text>
-        <GiftedChat
-          onPressAvatar={this.props.addFriend}
-          messages={this.props.chat.chats[this.props.activeIdentityContext.rid]}
-          onSend={this.props.sendChat}
-          user={{
-            _id: this.props.me.identity.username_signature,
-            name: this.props.me.identity.username,
-            username: this.props.me.identity.username,
-            username_signature: this.props.me.identity.username_signature,
-            public_key: this.props.me.identity.public_key,
+        <MapBox
+          option={{
+            style: 'mapbox://v1/mapbox/streets-v11',
+            center: [-100.436, 30.771], // starting position
+            zoom: 2 // starting zoom
           }}
-          renderActions={this.renderActions}
-          parsePatterns={(linkStyle) => [
-            { type: 'url', style: styles.url, onPress: this.handleUrlPress },
-          ]}
-          renderMessageVideo={this.renderMessageVideo}
+          height={50}
+          accessToken='pk.eyJ1IjoiY2VudGVyaWRlbnRpdHkiLCJhIjoiY2s4ODNwc3NvMDBmZjNncTgwcmh0azQ2ZyJ9.6GRQpQRda2DinJXWNhfMNA'
         />
+        {/* {window.location.hash.indexOf('|') > 0 && 
+        <View style={{maxHeight: 100, flex: 1, flexDirection: 'row', flexWrap: 'wrap'}}>
+          <Button
+            mode='outlined'
+            onPress={() => {
+              this.goBack();
+            }}
+          >&lt;Back</Button>
+          <Button
+            mode='outlined'
+            onPress={() => {
+              this.setStatus('going');
+            }}
+          >I'm going</Button>
+          <Button
+            onPress={() => {
+              this.setStatus('omw');
+            }}
+          >I'm on my way</Button>
+          <Button
+            onPress={() => {
+              this.setStatus('here');
+            }}
+          >I'm here</Button>
+          <Button
+            onPress={() => {
+              this.setStatus('exec');
+            }}
+          >I'm executing plan</Button>
+          <Button
+            onPress={() => {
+              this.setStatus('left');
+            }}
+          >I left</Button>
+        </View>}
+        {this.props.me.identity.username ? insertable : 
+            <TextInput
+              label="Username"
+              onChangeText={text => this.onUsernameChange(text)}
+              onSubmitEditing={() => this.onSubmitUsername()}
+            ></TextInput>
+        } */}
       </View>
     );
   }
@@ -223,6 +358,8 @@ class GroupDetail extends React.Component {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    flexDirection: 'column',
+    flexWrap: 'wrap'
   },
   title: {
     fontSize: 20,
@@ -239,13 +376,15 @@ const mapDispatchToProps = (dispatch: any) => (
   bindActionCreators({
     sendChat,
     addFriend,
-    changeActiveIdentityContext
+    changeActiveIdentityContext,
+    initMe,
+    createGroup
   }, dispatch)
 );
 
 const mapStateToProps = (state: any) => {
-  const { ws, me, chat, friends, groups, activeIdentityContext } = state
-  return { ws, me, chat, friends, groups, activeIdentityContext }
+  const { ws, me, chat, feed, friends, groups, activeIdentityContext } = state
+  return { ws, me, chat, feed, friends, groups, activeIdentityContext }
 };
 
 

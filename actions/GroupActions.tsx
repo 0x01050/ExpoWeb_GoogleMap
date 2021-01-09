@@ -9,8 +9,8 @@ export const initGroup = () => {
   var state = store.getState()
   var ci = new CenterIdentity();
   var group_data = {
-    "username": "group",
-    "username_signature": "MEUCIQDIlC+SpeLwUI4fzV1mkEsJCG6HIvBvazHuMMNGuVKi+gIgV8r1cexwDHM3RFGkP9bURi+RmcybaKHUcco1Qu0wvxw=",
+    "username": "#general",
+    "username_signature": "MEQCIDRy6DQtnKMGSqndT1FBGMSI5bC6JkmVoImqhGwGsUT3AiBPSRBQrmC5trRpnBpYGmdwNTPliDShzCwVB6HJ+pX5Yw==",
     "public_key": "036f99ba2238167d9726af27168384d5fe00ef96b928427f3b931ed6a695aaabff", 
     "wif":"KydUVG4w2ZSQkg6DAZ4UCEbfZz9Tg4PsjJFnvHwFsfmRkqXAHN8W"
   }
@@ -119,7 +119,8 @@ export const createGroup = (groupName: any, password: any) => {
     if (groupName.substr(0,1) !== '#') {
       groupName = '#' + groupName;
     }
-    groupName = groupName + ':' + password;
+    groupName = groupName 
+    if (password) groupName += ':' + password;
     return ci.reviveUser('KydUVG4w2ZSQkg6DAZ4UCEbfZz9Tg4PsjJFnvHwFsfmRkqXAHN8W', groupName)
     .then((group: any) => {
       var requested_rid = ci.generate_rid(group, state.ws.server_identity);
