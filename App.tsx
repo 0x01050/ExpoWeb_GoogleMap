@@ -28,6 +28,7 @@ export default class App extends React.Component {
     const colorScheme = useColorScheme();
     return (
       <Provider store={store}>
+      <div id='map'></div>
         <SafeAreaProvider>
           <PaperProvider
             theme={

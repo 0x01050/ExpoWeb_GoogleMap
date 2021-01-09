@@ -19,7 +19,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.centeridentity.id"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,8 +30,6 @@
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
-    },"packagerOpts": {
-      "config": "metro.config.js"
     }
   }
 }
