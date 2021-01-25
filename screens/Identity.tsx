@@ -11,7 +11,7 @@ import CenterIdentity from 'centeridentity';
 import * as ImagePicker from 'expo-image-picker';
 import store from '../store';
 
-import MapBox from 'react-native-web-mapbox';
+// import MapBox from 'react-native-web-mapbox';
 import {Helmet} from "react-helmet";
 
 class Identity extends React.Component {

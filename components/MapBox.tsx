@@ -6,6 +6,7 @@ import React from 'react'
 import PropTypes from 'prop-types'
 import { View, Platform } from 'react-native'
 import { WebView } from 'react-native-webview';
+import MapView from 'react-native-web-maps';
 
 const renderChart = ({ height, option, accessToken }) => `
   mapboxgl.accessToken = '${accessToken}';
@@ -31,7 +32,12 @@ export default class MapBox extends React.Component<any, any> {
     console.log(chart)
 
     return <View style={{width, height}}>
-      <WebView
+      
+      <MapView 
+        region={{latitude: 37.9838, longitude: 23.7275}}
+        defaultZoom={15}
+      />
+      {/* <WebView
         ref={(node: any) => { this.mapbox = node }}
         style={[style, {height, width, backgroundColor: 'transparent'}]}
         injectedJavaScript={renderChart({ height, option, accessToken })}
@@ -49,7 +55,7 @@ export default class MapBox extends React.Component<any, any> {
         renderLoading={renderLoading}
         renderError={renderError}
         scrollEnabled={false}
-      />
+      /> */}
     </View>
   }
 }

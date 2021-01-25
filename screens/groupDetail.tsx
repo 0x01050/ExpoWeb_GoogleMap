@@ -305,7 +305,7 @@ class GroupDetail extends React.Component {
             center: [-100.436, 30.771], // starting position
             zoom: 2 // starting zoom
           }}
-          height={50}
+          width={1024} height={512}
           accessToken='pk.eyJ1IjoiY2VudGVyaWRlbnRpdHkiLCJhIjoiY2s4ODNwc3NvMDBmZjNncTgwcmh0azQ2ZyJ9.6GRQpQRda2DinJXWNhfMNA'
         />
         {/* {window.location.hash.indexOf('|') > 0 && 
