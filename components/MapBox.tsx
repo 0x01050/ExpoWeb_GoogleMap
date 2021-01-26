@@ -7,6 +7,7 @@ import PropTypes from 'prop-types'
 import { View, Platform } from 'react-native'
 import { WebView } from 'react-native-webview';
 import MapView from 'react-native-web-maps';
+import { Circle, Marker } from 'react-google-maps';
 
 const renderChart = ({ height, option, accessToken }) => `
   mapboxgl.accessToken = '${accessToken}';
@@ -31,12 +32,37 @@ export default class MapBox extends React.Component<any, any> {
     const chart = renderChart({ height, option, accessToken })
     console.log(chart)
 
+    const location = {lat: 37.9838, lng: 23.7275};
+    const circles = [
+      { radius: 100, border: '#FFFF00', background: '#FF0000' },
+      { radius: 200, border: '#FF0000', background: '#FF0000' },
+      { radius: 300, border: '#00FF00', background: '#00FF00' },
+      { radius: 500, border: '#E99D31', background: '#E99D31' },
+    ]
+
     return <View style={{width, height}}>
       
       <MapView 
-        region={{latitude: 37.9838, longitude: 23.7275}}
+        region={{latitude: location.lat, longitude: location.lng}}
         defaultZoom={15}
-      />
+      >
+        {
+          circles.map((circle, index) => 
+            <Circle
+              center={location}
+              radius={circle.radius}
+              options={{
+                fillColor: circle.background,
+                strokeColor: circle.border
+              }}
+              key={index}
+            />
+          )
+        }
+        <Marker
+          position={{lat: 37.9838, lng: 23.7275}}
+        />
+      </MapView>
       {/* <WebView
         ref={(node: any) => { this.mapbox = node }}
         style={[style, {height, width, backgroundColor: 'transparent'}]}
